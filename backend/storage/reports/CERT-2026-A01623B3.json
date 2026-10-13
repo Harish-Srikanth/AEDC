@@ -1,0 +1,15 @@
+{
+  "certificate_id": "CERT-2026-A01623B3",
+  "case_id": "CASE-TEST-01",
+  "custodian": "Lead Tester",
+  "total_records": 300,
+  "verdict": "PASS",
+  "root_hash": "31fbb2fec37cc17f0be4c847c08cab5d060a90f9cb1956e2c450961f2df4e134",
+  "checks": {
+    "canonical_hash_integrity": true,
+    "hash_chain_continuity": true,
+    "custody_trail_verified": true,
+    "dual_ai_consensus": true,
+    "provenance_intact": true
+  }
+}
