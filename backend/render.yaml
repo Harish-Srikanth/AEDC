@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: aedc-cyber-forensics-backend
+    env: python
+    region: oregon
+    plan: standard
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: AEDC_SECRET_KEY
+        generateValue: true
+    disk:
+      name: aedc-storage
+      mountPath: /data
+      sizeGB: 5

@@ -1,0 +1,7 @@
+incident_id,attack_type,user,device,malicious_ip,indicator,severity,description
+INC-0001,Brute Force,user_005,PC-105,192.0.2.50,login-failure,High,Repeated failed authentication attempts
+INC-0002,Credential Abuse,user_007,PC-107,198.51.100.23,explicit-credential,Critical,Use of explicit credentials from unusual source
+INC-0003,Privilege Escalation,user_009,PC-109,203.0.113.44,privileged-process,High,Suspicious privileged process execution
+INC-0004,Lateral Movement,user_012,PC-112,198.51.100.77,remote-service,Critical,Remote execution toward another host
+INC-0005,Command Execution,user_015,PC-115,203.0.113.88,powershell,High,Encoded PowerShell command execution
+INC-0006,Data Exfiltration,user_018,PC-118,192.0.2.99,archive-upload,Critical,Sensitive archive prepared for external transfer

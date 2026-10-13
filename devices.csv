@@ -1,0 +1,21 @@
+device_id,ip_address,os,department,asset_criticality
+PC-101,10.0.0.1,Windows Server 2022,HR,High
+PC-102,10.0.0.2,Windows 11,Sales,Medium
+PC-103,10.0.0.3,Windows 11,Sales,Low
+PC-104,10.0.0.4,Windows 11,IT,Medium
+PC-105,10.0.0.5,Windows 11,HR,High
+PC-106,10.0.0.6,Windows 11,Research,Low
+PC-107,10.0.0.7,Windows Server 2022,IT,Low
+PC-108,10.0.0.8,Windows 11,Sales,Low
+PC-109,10.0.0.9,Windows 11,HR,High
+PC-110,10.0.0.10,Windows 10,Research,High
+PC-111,10.0.0.11,Windows Server 2022,IT,Medium
+PC-112,10.0.0.12,Windows 11,Sales,High
+PC-113,10.0.0.13,Windows 11,HR,High
+PC-114,10.0.0.14,Windows 10,HR,Medium
+PC-115,10.0.0.15,Windows Server 2022,Finance,Low
+PC-116,10.0.0.16,Windows 10,HR,Low
+PC-117,10.0.0.17,Windows Server 2022,Sales,Low
+PC-118,10.0.0.18,Windows 10,HR,Medium
+PC-119,10.0.0.19,Windows 11,Research,Medium
+PC-120,10.0.0.20,Windows 10,Sales,High
