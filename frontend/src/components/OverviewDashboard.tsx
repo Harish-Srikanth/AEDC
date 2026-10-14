@@ -13,6 +13,8 @@ interface OverviewDashboardProps {
   onTrainModelsClick: () => void;
   onCertifyClick: () => void;
   isLoading: boolean;
+  error?: string | null;
+  onRetry?: () => void;
 }
 
 export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
@@ -23,6 +25,8 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
   onTrainModelsClick,
   onCertifyClick,
   isLoading,
+  error,
+  onRetry,
 }) => {
   const total = summary?.total_evidence ?? 0;
   const malicious = summary?.total_malicious ?? 0;
@@ -73,6 +77,27 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
         </div>
       </div>
 
+      {/* Error Alert if summary failed to load */}
+      {error && !summary && (
+        <div className="p-4 rounded-xl bg-rose-950/50 border border-rose-800/80 flex items-center justify-between gap-4 text-xs text-rose-200">
+          <div className="flex items-center space-x-3">
+            <ShieldAlert className="w-5 h-5 text-rose-400 shrink-0" />
+            <div>
+              <p className="font-bold text-rose-200">Backend Connection Error</p>
+              <p className="text-rose-300/80 mt-0.5">{error}</p>
+            </div>
+          </div>
+          {onRetry && (
+            <button
+              onClick={onRetry}
+              className="px-3 py-1.5 rounded-lg bg-rose-800 hover:bg-rose-700 text-white font-semibold shrink-0 transition"
+            >
+              Retry Connection
+            </button>
+          )}
+        </div>
+      )}
+
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Evidence Records */}
@@ -82,7 +107,7 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
             <Database className="w-4 h-4 text-cyan-400" />
           </div>
           <p className="text-3xl font-bold text-slate-100 mt-3 font-mono">
-            {isLoading ? '...' : total.toLocaleString()}
+            {isLoading && !summary ? '...' : total.toLocaleString()}
           </p>
           <div className="mt-2 text-xs text-slate-400 flex items-center justify-between">
             <span>Canonical SHA-256 blocks</span>
@@ -97,7 +122,7 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
             <ShieldAlert className="w-4 h-4 text-rose-400" />
           </div>
           <p className="text-3xl font-bold text-rose-400 mt-3 font-mono">
-            {isLoading ? '...' : malicious.toLocaleString()}
+            {isLoading && !summary ? '...' : malicious.toLocaleString()}
           </p>
           <div className="mt-2 text-xs text-slate-400 flex items-center justify-between">
             <span>Prevalence Rate</span>
@@ -135,7 +160,7 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
             <TrendingUp className="w-4 h-4 text-amber-400" />
           </div>
           <p className="text-3xl font-bold text-amber-400 mt-3 font-mono">
-            {isLoading ? '...' : (summary?.critical_risk_count ?? 0).toLocaleString()}
+            {isLoading && !summary ? '...' : (summary?.critical_risk_count ?? 0).toLocaleString()}
           </p>
           <div className="mt-2 text-xs text-slate-400 flex items-center justify-between">
             <span>Score &ge; 85 / 100</span>

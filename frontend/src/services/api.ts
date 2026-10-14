@@ -4,17 +4,31 @@ import {
   CustodyLog, ForensicCertificate, DiscoveryData
 } from '../types';
 
-const API_BASE =
-  import.meta.env.VITE_API_URL ||
-  (import.meta.env.DEV ? '/api' : 'https://aedc-backend.onrender.com/api');
+function resolveApiBase(): string {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl && typeof envUrl === 'string' && envUrl.trim() !== '') {
+    const cleanUrl = envUrl.trim().replace(/\/+$/, '');
+    if (!cleanUrl.endsWith('/api')) {
+      return `${cleanUrl}/api`;
+    }
+    return cleanUrl;
+  }
+  return import.meta.env.DEV ? '/api' : 'https://aedc-backend.onrender.com/api';
+}
+
+const API_BASE = resolveApiBase();
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${url}`, options);
+  const fullUrl = `${API_BASE}${url}`;
+  const res = await fetch(fullUrl, options);
   if (!res.ok) {
     let errDetail = `HTTP ${res.status}: ${res.statusText}`;
     try {
-      const errJson = await res.json();
-      if (errJson.detail) errDetail = errJson.detail;
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const errJson = await res.json();
+        if (errJson.detail) errDetail = errJson.detail;
+      }
     } catch (_) {}
     throw new Error(errDetail);
   }

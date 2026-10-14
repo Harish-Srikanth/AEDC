@@ -68,86 +68,65 @@ export function App() {
   const [selectedXaiEvidenceId, setSelectedXaiEvidenceId] = useState('E000001');
 
   // Connection & loading state
-  const [isConnecting, setIsConnecting] = useState(true);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Load all initial data from backend with auto-retry for cold starts
   const loadInitialData = async (retryCount = 0) => {
-    setIsConnecting(true);
-    let ok = false;
-    try {
-      const statusRes = await api.getSystemStatus();
-      setSystemStatus(statusRes);
-      ok = true;
-    } catch (_) {}
-
-    if (!ok && retryCount < 6) {
-      setTimeout(() => loadInitialData(retryCount + 1), 3000);
-      return;
+    setIsLoadingData(true);
+    if (retryCount === 0) {
+      setLoadError(null);
     }
 
     try {
-      const discRes = await api.discoverDatasets();
-      setDiscovery(discRes);
-    } catch (_) {}
-
-    try {
-      const sumRes = await api.getEvidenceSummary();
+      // First attempt core status and evidence summary in parallel
+      const [statusRes, sumRes] = await Promise.all([
+        api.getSystemStatus(),
+        api.getEvidenceSummary(),
+      ]);
+      setSystemStatus(statusRes);
       setSummary(sumRes);
-    } catch (_) {}
+      setLoadError(null);
 
-    try {
-      const evRes = await api.getEvidenceList({ page: 1, pageSize: 25 });
-      setEvidenceItems(evRes.items);
-      setEvidenceTotal(evRes.total);
-      setEvidenceTotalPages(evRes.total_pages);
-    } catch (_) {}
-
-    try {
-      const rfRes = await api.getRFMetrics();
-      setRfMetrics(rfRes);
-    } catch (_) {}
-
-    try {
-      const gnnRes = await api.getGNNMetrics();
-      setGnnMetrics(gnnRes);
-    } catch (_) {}
-
-    try {
-      const ensRes = await api.getEnsembleComparison();
-      setEnsembleData(ensRes);
-    } catch (_) {}
-
-    try {
-      const intRes = await api.verifyIntegrity();
-      setIntegrityStatus(intRes);
-    } catch (_) {}
-
-    try {
-      const gRes = await api.getGraphTopology({ limit: 120 });
-      setGraphData(gRes);
-    } catch (_) {}
-
-    try {
-      const tRes = await api.getTimelineEvents({ limit: 80 });
-      setTimelineEvents(tRes.events);
-      setTimelineTotal(tRes.total);
-    } catch (_) {}
-
-    try {
-      const cRes = await api.getCustodyLogs(undefined, 50);
-      setCustodyLogs(cRes.logs);
-      setCustodyTotal(cRes.total);
-    } catch (_) {}
-
-    try {
-      const certRes = await api.listCertificates();
-      setCertificates(certRes.certificates);
-      if (certRes.certificates.length > 0) {
-        setActiveCert(certRes.certificates[0]);
+      // Load supporting dataset, models, integrity, and topology in parallel
+      Promise.allSettled([
+        api.discoverDatasets().then(setDiscovery),
+        api.getEvidenceList({ page: 1, pageSize: 25 }).then((evRes) => {
+          setEvidenceItems(evRes.items);
+          setEvidenceTotal(evRes.total);
+          setEvidenceTotalPages(evRes.total_pages);
+        }),
+        api.getRFMetrics().then(setRfMetrics),
+        api.getGNNMetrics().then(setGnnMetrics),
+        api.getEnsembleComparison().then(setEnsembleData),
+        api.verifyIntegrity().then(setIntegrityStatus),
+        api.getGraphTopology({ limit: 120 }).then(setGraphData),
+        api.getTimelineEvents({ limit: 80 }).then((tRes) => {
+          setTimelineEvents(tRes.events);
+          setTimelineTotal(tRes.total);
+        }),
+        api.getCustodyLogs(undefined, 50).then((cRes) => {
+          setCustodyLogs(cRes.logs);
+          setCustodyTotal(cRes.total);
+        }),
+        api.listCertificates().then((certRes) => {
+          setCertificates(certRes.certificates);
+          if (certRes.certificates.length > 0) {
+            setActiveCert(certRes.certificates[0]);
+          }
+        }),
+      ]).finally(() => {
+        setIsLoadingData(false);
+      });
+    } catch (err: any) {
+      console.warn(`Initial load failed (attempt ${retryCount + 1}):`, err);
+      if (retryCount < 4) {
+        setTimeout(() => loadInitialData(retryCount + 1), 3000);
+      } else {
+        setIsLoadingData(false);
+        setLoadError(err.message || 'Failed to connect to backend server.');
       }
-    } catch (_) {}
-
-    setIsConnecting(false);
+    }
   };
 
   useEffect(() => {
@@ -311,11 +290,11 @@ export function App() {
       {!summary && (
         <div className="bg-cyan-950/90 border-b border-cyan-800/80 px-6 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs text-cyan-200">
           <div className="flex items-center space-x-2">
-            <RefreshCw className="w-3.5 h-3.5 text-cyan-400 animate-spin" />
+            <RefreshCw className={`w-3.5 h-3.5 text-cyan-400 ${isLoadingData ? 'animate-spin' : ''}`} />
             <span>
-              {isConnecting
+              {isLoadingData
                 ? 'Connecting to Render Cloud Backend (waking up free tier server)...'
-                : 'Backend is taking a moment to respond. Click Retry to connect.'}
+                : (loadError ? `Backend connection: ${loadError}` : 'Backend is taking a moment to respond. Click Retry to connect.')}
             </span>
           </div>
           <button
@@ -349,7 +328,9 @@ export function App() {
               onIngestClick={() => setActiveTab('datasets')}
               onTrainModelsClick={() => setActiveTab('models')}
               onCertifyClick={() => setActiveTab('certification')}
-              isLoading={!summary}
+              isLoading={isLoadingData}
+              error={loadError}
+              onRetry={() => loadInitialData(0)}
             />
           )}
 
