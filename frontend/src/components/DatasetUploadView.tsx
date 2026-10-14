@@ -26,33 +26,44 @@ export const DatasetUploadView: React.FC<DatasetUploadViewProps> = ({
   const [custodian, setCustodian] = useState('Senior Cyber Forensics Examiner');
   const [dragOver, setDragOver] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleUploadFiles = async (files: FileList | File[]) => {
+    const fileArray = Array.from(files);
+    if (fileArray.length === 0) return;
+    
+    setIsUploading(true);
+    let successCount = 0;
+    try {
+      for (let i = 0; i < fileArray.length; i++) {
+        const file = fileArray[i];
+        setUploadStatus(`Uploading (${i + 1}/${fileArray.length}): ${file.name}...`);
+        await onUploadFile(file);
+        successCount++;
+      }
+      setUploadStatus(`Uploaded ${successCount} file(s) successfully.`);
+      onRefreshDiscovery();
+    } catch (err: any) {
+      setUploadStatus(`Error: ${err.message}`);
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const file = e.dataTransfer.files[0];
-      setUploadStatus(`Uploading ${file.name}...`);
-      try {
-        await onUploadFile(file);
-        setUploadStatus(`Uploaded ${file.name} successfully.`);
-      } catch (err: any) {
-        setUploadStatus(`Error: ${err.message}`);
-      }
+      await handleUploadFiles(e.dataTransfer.files);
     }
   };
 
   const handleFileInput = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      setUploadStatus(`Uploading ${file.name}...`);
-      try {
-        await onUploadFile(file);
-        setUploadStatus(`Uploaded ${file.name} successfully.`);
-      } catch (err: any) {
-        setUploadStatus(`Error: ${err.message}`);
-      }
+      await handleUploadFiles(e.target.files);
     }
+    // reset input value so re-uploading works
+    e.target.value = '';
   };
 
   return (
@@ -150,9 +161,22 @@ export const DatasetUploadView: React.FC<DatasetUploadViewProps> = ({
           <p className="text-xs text-slate-400 mt-1 max-w-xs">
             Drag and drop CSV or JSON log files here, or click to browse.
           </p>
-          <label className="mt-4 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold cursor-pointer border border-slate-700 transition">
-            <span>Browse Files</span>
-            <input type="file" accept=".csv,.json,.jsonl" onChange={handleFileInput} className="hidden" />
+          <label className={`mt-4 px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer border transition flex items-center space-x-2 ${
+            isUploading
+              ? 'bg-slate-800 text-slate-400 border-slate-700 cursor-not-allowed opacity-75'
+              : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+          }`}>
+            {isUploading && <RefreshCw className="w-3.5 h-3.5 animate-spin text-cyan-400" />}
+            <span>{isUploading ? 'Uploading Datasets...' : 'Browse Files (Select Multiple)'}</span>
+            <input
+              type="file"
+              multiple
+              accept=".csv,.json,.jsonl"
+              onChange={handleFileInput}
+              disabled={isUploading}
+              className="hidden"
+              id="multi-file-upload"
+            />
           </label>
           {uploadStatus && (
             <p className="mt-3 text-xs text-cyan-400 font-mono">{uploadStatus}</p>

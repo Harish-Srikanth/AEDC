@@ -13,6 +13,7 @@ import { ChainOfCustodyView } from './components/ChainOfCustodyView';
 import { CertificationReportsView } from './components/CertificationReportsView';
 import { LiveStreamingView } from './components/LiveStreamingView';
 import { SystemStatusView } from './components/SystemStatusView';
+import { RefreshCw } from 'lucide-react';
 import { api } from './services/api';
 import {
   EvidenceItem, EvidenceSummary, ModelMetrics, EnsembleComparison,
@@ -66,12 +67,23 @@ export function App() {
   // Selected Evidence for XAI Studio
   const [selectedXaiEvidenceId, setSelectedXaiEvidenceId] = useState('E000001');
 
-  // Load all initial data from backend
-  const loadInitialData = async () => {
+  // Connection & loading state
+  const [isConnecting, setIsConnecting] = useState(true);
+
+  // Load all initial data from backend with auto-retry for cold starts
+  const loadInitialData = async (retryCount = 0) => {
+    setIsConnecting(true);
+    let ok = false;
     try {
       const statusRes = await api.getSystemStatus();
       setSystemStatus(statusRes);
+      ok = true;
     } catch (_) {}
+
+    if (!ok && retryCount < 6) {
+      setTimeout(() => loadInitialData(retryCount + 1), 3000);
+      return;
+    }
 
     try {
       const discRes = await api.discoverDatasets();
@@ -134,10 +146,12 @@ export function App() {
         setActiveCert(certRes.certificates[0]);
       }
     } catch (_) {}
+
+    setIsConnecting(false);
   };
 
   useEffect(() => {
-    loadInitialData();
+    loadInitialData(0);
   }, []);
 
   // Evidence Explorer actions
@@ -292,6 +306,26 @@ export function App() {
         isStreaming={isStreaming}
         activeTab={activeTab}
       />
+
+      {/* Backend Connecting / Waking Banner */}
+      {!summary && (
+        <div className="bg-cyan-950/90 border-b border-cyan-800/80 px-6 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs text-cyan-200">
+          <div className="flex items-center space-x-2">
+            <RefreshCw className="w-3.5 h-3.5 text-cyan-400 animate-spin" />
+            <span>
+              {isConnecting
+                ? 'Connecting to Render Cloud Backend (waking up free tier server)...'
+                : 'Backend is taking a moment to respond. Click Retry to connect.'}
+            </span>
+          </div>
+          <button
+            onClick={() => loadInitialData(0)}
+            className="px-3 py-1 rounded-lg bg-cyan-700 hover:bg-cyan-600 text-white font-semibold text-[11px] transition shadow"
+          >
+            Retry Connection
+          </button>
+        </div>
+      )}
 
       {/* Main Body */}
       <div className="flex-1 flex overflow-hidden">
