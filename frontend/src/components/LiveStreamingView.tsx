@@ -4,6 +4,7 @@ import {
   Terminal, Activity, RefreshCw, KeyRound
 } from 'lucide-react';
 import { EvidenceItem } from '../types';
+import { api } from '../services/api';
 
 interface LiveStreamingViewProps {
   onControlSimulation: (running: boolean) => Promise<void>;
@@ -22,7 +23,7 @@ export const LiveStreamingView: React.FC<LiveStreamingViewProps> = ({
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const es = new EventSource('/api/stream/events');
+    const es = new EventSource(api.getStreamUrl());
     setEventSource(es);
 
     es.onmessage = (event) => {
